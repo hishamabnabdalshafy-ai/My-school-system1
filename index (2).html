@@ -1,0 +1,908 @@
+<!DOCTYPE html><html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نظام مدرستي </title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Cairo',sans-serif}
+body{direction:rtl;background:linear-gradient(rgba(0,0,0,.65),rgba(0,0,0,.65)),url('https://images.unsplash.com/photo-1516979187457-637abb4f9353');background-size:cover;background-position:center;min-height:100vh}
+.container{width:95%;max-width:1200px;margin:auto;padding:20px}
+.header{
+text-align:center;
+color:#fff;
+padding:20px;
+position:relative;
+} 
+.logo{width:120px;height:120px;border-radius:50%;border:4px solid #fff;object-fit:cover;margin-bottom:15px}
+.card{background:#fff;padding:18px;border-radius:18px;margin-bottom:18px;box-shadow:0 10px 25px rgba(0,0,0,.25)}
+.section-title{font-size:22px;font-weight:bold;color:#16a085;margin-bottom:15px}
+input,select,textarea{width:100%;padding:12px;margin-bottom:10px;border-radius:10px;border:1px solid #ccc}
+button{width:100%;padding:12px;border:none;border-radius:10px;cursor:pointer;color:#fff;margin-top:8px;font-size:15px;background:linear-gradient(45deg,#16a085,#1abc9c)}
+button:hover{opacity:.9}
+.admin{background:#2c3e50}
+.logout{background:#e74c3c}
+.pay{background:#3498db}
+.danger{background:#c0392b}
+.dark-btn{background:#111}
+.table-box{overflow-x:auto}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th,td{border:1px solid #eee;padding:10px;text-align:center}
+th{background:#16a085;color:#fff}
+.info-box{background:#f7f7f7;padding:10px;border-radius:10px;margin-bottom:10px}
+.student-img{width:120px;height:120px;border-radius:50%;object-fit:cover;display:block;margin:auto auto 15px;border:4px solid #16a085}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px}
+.stat-box{background:#16a085;color:#fff;padding:20px;border-radius:15px;text-align:center;font-size:20px;font-weight:bold}
+.badge{padding:5px 10px;border-radius:8px;color:#fff;font-size:13px}.high{background:#27ae60}.medium{background:#f39c12}.low{background:#c0392b}
+.dark-mode{background:#111!important;color:#fff}.dark-mode .card{background:#1e1e1e;color:#fff}.dark-mode input,.dark-mode textarea,.dark-mode select{background:#2a2a2a;color:#fff;border:1px solid #555}
+#toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:14px 25px;border-radius:12px;color:#fff;display:none;z-index:9999;background:#16a085;font-weight:bold}
+.success{background:#27ae60!important}.error{background:#c0392b!important}
+.schedule-input{
+min-width:120px;
+text-align:center;
+font-weight:bold;
+background:#f9f9f9;
+}
+
+.schedule-day{
+background:#16a085;
+color:#fff;
+font-weight:bold;
+}
+
+.dark-mode .schedule-input{
+background:#2a2a2a;
+color:#fff;
+} 
+.ai-box{
+background:linear-gradient(45deg,#0f2027,#203a43,#2c5364);
+padding:20px;
+border-radius:18px;
+color:white;
+margin-top:20px;
+box-shadow:0 10px 25px rgba(0,0,0,.3)
+}
+
+.ai-title{
+font-size:24px;
+font-weight:bold;
+margin-bottom:15px;
+text-align:center
+}
+
+.ai-answer{
+background:rgba(255,255,255,.1);
+padding:15px;
+border-radius:12px;
+margin-top:15px;
+line-height:2
+}
+
+.ai-btn{
+background:linear-gradient(45deg,#8e44ad,#9b59b6)
+} 
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<div class="container">
+<div class="header">
+
+
+
+<div style="
+position:absolute;
+top:10px;
+left:10px;
+font-size:11px;
+color:white;
+opacity:.8;
+">
+abn abd Alshafy
+</div>
+<div style="
+position:absolute;
+top:10px;
+left:10px;
+font-size:11px;
+color:white;
+opacity:.8;
+">
+<p> abn abd Alshafy</p> 
+01018428738
+</div>
+
+<p> مدرستي </p> 
+
+</div>
+<div class="card">
+<div class="section-title">تسجيل الدخول</div>
+<input id="name" placeholder="الاسم">
+<input id="password" type="password" placeholder="كلمة السر">
+<button onclick="loginStudent()">دخول طالب</button>
+<button class="admin" onclick="loginAdmin()">دخول أدمن</button>
+<button class="dark-btn" onclick="toggleDarkMode()">🌙 الوضع الليلي</button>
+</div>
+<div id="result"></div>
+</div>
+<script>
+let currentStudent=null;
+const schoolDays=[
+'الأحد',
+'الإثنين',
+'الثلاثاء',
+'الأربعاء',
+'الخميس'
+];
+if(!localStorage.getItem('students')) localStorage.setItem('students',JSON.stringify([]));
+if(!localStorage.getItem('adminData')) localStorage.setItem('adminData',JSON.stringify({name:'admin',password:'123456'}));
+if(localStorage.getItem('schoolName')){
+
+let title=document.getElementById('schoolName');
+
+title.innerText=localStorage.getItem('schoolName');
+
+title.style.display='block';
+
+
+}
+function showToast(msg,type='success'){let t=document.getElementById('toast');t.innerHTML=msg;t.className='';t.classList.add(type);t.style.display='block';setTimeout(()=>{t.style.display='none'},3000)}
+function toggleDarkMode(){document.body.classList.toggle('dark-mode')}
+if(localStorage.getItem('schoolLogo')) document.getElementById('schoolLogo').src=localStorage.getItem('schoolLogo');
+function uploadSchoolLogo(){let file=document.getElementById('schoolLogoInput').files[0];if(!file)return;let reader=new FileReader();reader.onload=function(){localStorage.setItem('schoolLogo',reader.result);document.getElementById('schoolLogo').src=reader.result;showToast('✅ تم رفع الشعار')};reader.readAsDataURL(file)}
+function loginStudent(){let name=document.getElementById('name').value.trim();let password=document.getElementById('password').value.trim();let students=JSON.parse(localStorage.getItem('students'))||[];let student=students.find(s=>s.name===name&&s.password===password);if(!student){showToast('❌ البيانات غير صحيحة','error');return;}currentStudent=student;showStudent(student)}
+function loginAdmin(){let name=document.getElementById('name').value.trim();let password=document.getElementById('password').value.trim();let admin=JSON.parse(localStorage.getItem('adminData'));if(name===admin.name&&password===admin.password){showAdminPanel()}else{showToast('❌ بيانات الأدمن خطأ','error')}}
+function getSuccessRate(){let students=JSON.parse(localStorage.getItem('students'))||[];if(students.length===0)return 0;let success=students.filter(s=>(s.subjects||[]).reduce((a,b)=>a+Number(b.grade||0),0)>=250).length;return Math.round((success/students.length)*100)}
+function getStudentSchedule(grade){let schedules=JSON.parse(localStorage.getItem('schedules'))||{};let table=schedules[grade];if(!table)return '<p>لا يوجد جدول دراسي</p>';let html=`<div class='card'><div class='section-title'>📚 الجدول الدراسي</div><div class='table-box'><table><tr><th>اليوم</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr>`;for(let day in table){html+=`<tr><td>${day}</td><td>${table[day][0]||'-'}</td><td>${table[day][1]||'-'}</td><td>${table[day][2]||'-'}</td><td>${table[day][3]||'-'}</td><td>${table[day][4]||'-'}</td><td>${table[day][5]||'-'}</td></tr>`}html+='</table></div></div>';return html}
+function showStudent(student){let rows='';(student.subjects||[]).forEach(sub=>{rows+=`<tr><td>${sub.name}</td><td>${sub.grade}</td></tr>`});let levelClass=student.level==='رفيع'?'high':student.level==='منخفض'?'low':'medium';document.getElementById('result').innerHTML=`
+
+<div class='card' style='text-align:center'>
+
+<img
+src='${localStorage.getItem('schoolLogo') || 'https://cdn-icons-png.flaticon.com/512/3135/3135755.png'}'
+class='logo'
+style='margin:auto'
+>
+
+<h2 style="
+text-align:center;
+color:#16a085;
+margin-top:15px;
+margin-bottom:10px;
+font-size:28px;
+font-weight:bold;
+">
+${localStorage.getItem('schoolName') || ''}
+</h2>
+
+</div>
+<div class='section-title'>بيانات الطالب</div><img src='${student.image||'https://cdn-icons-png.flaticon.com/512/149/149071.png'}' class='student-img'><div class='info-box'>👤 ${student.name}</div><div class='info-box'>🏫 ${student.grade}</div><div class='info-box'> البلد: ${student.address}</div><div class='info-box'>📞 ولي الأمر: ${student.parentPhone||'-'}</div><div class='info-box'>📝 ملاحظات: ${student.notes||'-'}</div><div class='info-box'>📊 النتيجة: ${student.result||'لا توجد'}</div><div class='info-box'>💰 المصاريف: ${student.feesPaid?'تم الدفع ✅':'غير مدفوع ❌'}</div><div class='info-box'>⭐ المستوى: <span class='badge ${levelClass}'>${student.level}</span></div><div class='info-box'>📅 الغياب: ${student.absent||0} يوم</div><button onclick='printResult()'>🖨 طباعة النتيجة</button>
+<button class='pay' onclick='changeStudentPassword()'>
+🔐 تغيير كلمة السر
+</button>
+<button class='logout' onclick='logout()'>تسجيل خروج</button></div><div class='card'><div class='section-title'>الدرجات</div><div class='table-box'><table><tr><th>المادة</th><th>الدرجة</th></tr>${rows||'<tr><td colspan="2">لا توجد درجات</td></tr>'}</table></div></div>${getStudentSchedule(student.grade)}
+${loadStudentReplies()}
+<div class='card ai-box'>
+
+<div class='ai-title'>
+📩 إرسال استفسار للإدارة
+</div>
+
+<input
+id='studentQuestion'
+placeholder='اكتب استفسارك هنا'
+>
+
+<button
+class='ai-btn'
+onclick='sendQuestionToAdmin()'
+>
+📨 إرسال الاستفسار
+</button>
+
+<div
+id='studentQuestionResult'
+class='ai-answer'
+>
+يمكنك إرسال أي استفسار للإدارة
+</div>
+
+</div>
+`;
+}
+
+function showAdminPanel(){let students=JSON.parse(localStorage.getItem('students'))||[];students.sort((a,b)=>a.level.localeCompare(b.level));let paid=students.filter(s=>s.feesPaid).length;let rows='';students.forEach(s=>{rows+=`<tr><td><img src='${s.image||'https:cdn-icons-png.flaticon.com/512/149/149071.png'}' width='50' height='50' style='border-radius:50%'><br>${s.name}</td><td>${s.grade}</td><td>${s.result||'-'}</td><td>${s.feesPaid?'✅':'❌'}</td><td><button onclick='editStudent(${s.id})'>✏️ تعديل</button><button class='pay' onclick='toggleFees(${s.id})'>💰 دفع</button><button onclick="markAttendance(${s.id},'حاضر')">✅ حضور</button><button onclick="markAttendance(${s.id},'غائب')">❌ غياب</button>
+
+</button>
+
+<button class='danger' onclick='deleteStudent(${s.id})'>
+🗑 حذف
+</button></td></tr>`});document.getElementById('result').innerHTML=`<div class='card'><div class='section-title'>📊 الإحصائيات</div><div class='stats'><div class='stat-box'>👨‍🎓 ${students.length}<br>طلاب</div><div class='stat-box'>💰 ${paid}<br>مدفوع</div><div class='stat-box'>❌ ${students.length-paid}<br>غير مدفوع</div><div class='stat-box'>🎯 ${getSuccessRate()}%<br>نسبة النجاح</div></div></div><div class='card'><div class='section-title'>⚙️ إعدادات النظام</div><input type='file' id='schoolLogoInput' accept='image/*'><button onclick='uploadSchoolLogo()'>
+🏫 رفع شعار المدرسة
+</button>
+
+<button class='danger' onclick='removeSchoolLogo()'>
+🗑 حذف الشعار
+</button>
+
+<button onclick='changeSchoolName()'>
+🏫 تغيير اسم المدرسة
+</button>
+
+<button class='danger' onclick='removeSchoolName()'>
+🗑 حذف اسم المدرسة
+</button><button onclick='changeAdminData()'>🔐 تغيير بيانات الأدمن</button><button onclick='saveBackup()'>💾 حفظ نسخة احتياطية</button><input type='file' id='backupFile' accept='.json'><button onclick='restoreBackup()'>♻️ استرجاع النسخة الاحتياطية</button><button onclick='exportStudents()'>📥 تصدير الطلاب</button></div><div class='card'><div class='section-title'>➕ إضافة طالب</div><input id='studentName' placeholder='الاسم'><input id='studentAge' type='number' placeholder='العمر'><input id='studentAddress' placeholder='العنوان'><input id='parentPhone' placeholder='رقم ولي الأمر'><select id='studentGrade'><option>الصف الأول</option><option>الصف الثاني</option><option>الصف الثالث</option><option>الصف الرابع</option><option>الصف الخامس</option><option>الصف السادس</option></select><select id='studentLevel'><option>رفيع</option><option selected>متوسط</option><option>منخفض</option></select><input id='studentPassword' maxlength='6' placeholder='كلمة السر 6 أرقام'><input id='studentResult' placeholder='النتيجة'><textarea id='studentSubjects' placeholder='عربي:90'></textarea><textarea id='studentNotes' placeholder='ملاحظات الطالب'></textarea><input type='file' id='studentPdf' accept='.pdf'><input type='file' id='studentImage' accept='image/*'><button onclick='addStudent()'>إضافة الطالب</button></div><div class='card'>
+<div class='section-title'>📅 إدارة الجداول الدراسية الاحترافية</div>
+
+<select id='tableGrade'>
+<option>الصف الأول</option>
+<option>الصف الثاني</option>
+<option>الصف الثالث</option>
+<option>الصف الرابع</option>
+<option>الصف الخامس</option>
+<option>الصف السادس</option>
+</select>
+
+<div class='table-box'>
+<table>
+<tr>
+<th>اليوم</th>
+<th>الحصة الأولى</th>
+<th>الحصة الثانية</th>
+<th>الحصة الثالثة</th>
+<th>الحصة الرابعة</th>
+<th>الحصة الخامسة</th>
+<th>الحصة السادسة</th>
+</tr>
+<tbody id='scheduleInputs'></tbody>
+</table>
+</div>
+
+<div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:15px'>
+<button onclick='saveSchedule()'>💾 حفظ الجدول</button>
+<button class='pay' onclick='clearSchedule()'>🗑 مسح الجدول</button>
+<button class='admin' onclick='copySchedule()'>📋 نسخ جدول صف آخر</button>
+<div/> 
+<div class='card'><div class='section-title'>🔍 البحث عن طالب</div><input id='searchInput' placeholder='اكتب اسم الطالب' onkeyup='searchStudent()'></div><div class='card'><div class='card'>
+
+<button 
+class='admin'
+onclick='toggleInbox()'
+>
+📥 صندوق الوارد والتنبيهات
+</button>
+<button class='danger' onclick='clearInbox()'>
+🗑 مسح صندوق الوارد
+</button>
+
+<div 
+id='adminInbox'
+style='display:none;margin-top:15px'
+>
+</div>
+
+</div><div class='section-title'>👨‍🎓 الطلاب</div><div class='table-box'><table id='studentsTable'><tr><th>الطالب</th><th>الصف</th><th>النتيجة</th><th>الدفع</th><th>التحكم</th></tr>${rows}</table></div><button class='logout' onclick='logout()'  >تسجيل خروج</button></div>`;loadScheduleInputs();
+loadAdminInbox();}
+function isDuplicateName(name){let students=JSON.parse(localStorage.getItem('students'))||[];return students.some(s=>s.name===name)}
+function addStudent(){let name=document.getElementById('studentName').value.trim();let age=document.getElementById('studentAge').value.trim();let address=document.getElementById('studentAddress').value.trim();let parentPhone=document.getElementById('parentPhone').value.trim();let notes=document.getElementById('studentNotes').value.trim();let grade=document.getElementById('studentGrade').value;let level=document.getElementById('studentLevel').value;let password=document.getElementById('studentPassword').value.trim();let result=document.getElementById('studentResult').value.trim();let subjectsText=document.getElementById('studentSubjects').value.trim();let imageInput=document.getElementById('studentImage');let pdfInput=document.getElementById('studentPdf');if(isDuplicateName(name)){showToast('❌ الطالب موجود بالفعل','error');return;}if(password.length!==6||isNaN(password)){showToast('❌ كلمة السر يجب أن تكون 6 أرقام','error');return;}let subjects=[];subjectsText.split('\n').forEach(line=>{let parts=line.split(':');if(parts.length===2){subjects.push({name:parts[0],grade:parts[1]})}});let reader=new FileReader();reader.onload=function(){let students=JSON.parse(localStorage.getItem('students'))||[];students.push({id:Date.now(),name,age,address,parentPhone,notes,grade,level,password,result,subjects,pdfResult:pdfInput.files[0]?pdfInput.files[0].name:'',image:reader.result,feesPaid:false,absent:0,attendance:[]});localStorage.setItem('students',JSON.stringify(students));showToast('✅ تم إضافة الطالب');showAdminPanel()};if(imageInput.files[0]){reader.readAsDataURL(imageInput.files[0])}else{reader.onload()}}
+function editStudent(id){
+
+let students=JSON.parse(localStorage.getItem('students'))||[];
+
+let student=students.find(s=>s.id===id);
+
+if(!student)return;
+
+let newName=prompt('اسم الطالب',student.name);
+if(newName===null)return;
+
+let newPassword=prompt('كلمة السر',student.password);
+if(newPassword.length!==6 || isNaN(newPassword)){
+showToast('❌ كلمة السر يجب أن تكون 6 أرقام','error');
+return;
+}
+
+let newResult=prompt('النتيجة',student.result||'');
+
+let newNotes=prompt('الملاحظات',student.notes||'');
+
+let newGrade=prompt('الصف',student.grade||'');
+
+let newLevel=prompt('المستوى',student.level||'');
+
+let newAddress=prompt('العنوان',student.address||'');
+
+let newParentPhone=prompt(
+'رقم ولي الأمر',
+student.parentPhone||''
+);
+
+let newAbsent=prompt(
+'عدد أيام الغياب',
+student.absent||0
+);
+
+student.name=newName;
+student.password=newPassword;
+student.result=newResult;
+student.notes=newNotes;
+student.grade=newGrade;
+student.level=newLevel;
+student.address=newAddress;
+student.parentPhone=newParentPhone;
+student.absent=newAbsent;
+
+localStorage.setItem(
+'students',
+JSON.stringify(students)
+);
+
+showToast('✅ تم تعديل بيانات الطالب');
+
+showAdminPanel();
+
+}
+function deleteStudent(id){if(!confirm('حذف الطالب؟'))return;let students=JSON.parse(localStorage.getItem('students'));students=students.filter(s=>s.id!==id);localStorage.setItem('students',JSON.stringify(students));showToast('✅ تم الحذف');showAdminPanel()}
+function toggleFees(id){let students=JSON.parse(localStorage.getItem('students'));students=students.map(s=>{if(s.id===id)s.feesPaid=!s.feesPaid;return s});localStorage.setItem('students',JSON.stringify(students));showAdminPanel()}
+function addAbsence(id){let students=JSON.parse(localStorage.getItem('students'));students=students.map(s=>{if(s.id===id)s.absent=(s.absent||0)+1;return s});localStorage.setItem('students',JSON.stringify(students));showAdminPanel()}
+function markAttendance(id,status){let students=JSON.parse(localStorage.getItem('students'));students=students.map(s=>{if(s.id===id){if(!s.attendance)s.attendance=[];s.attendance.push({date:new Date().toLocaleDateString(),status})}return s});localStorage.setItem('students',JSON.stringify(students));showToast('✅ تم تسجيل الحضور')}
+function searchStudent(){let input=document.getElementById('searchInput').value.toLowerCase();let table=document.getElementById('studentsTable');let tr=table.getElementsByTagName('tr');for(let i=1;i<tr.length;i++){let td=tr[i].getElementsByTagName('td')[0];if(td){let txt=td.textContent||td.innerText;tr[i].style.display=txt.toLowerCase().includes(input)?'':'none'}}}
+function loadScheduleInputs(){
+
+let html='';
+
+schoolDays.forEach(day=>{
+
+html+=`
+<tr>
+
+<td class='schedule-day'>${day}</td>
+
+<td><input class='schedule-input' id='${day}1' placeholder='المادة'></td>
+
+<td><input class='schedule-input' id='${day}2' placeholder='المادة'></td>
+
+<td><input class='schedule-input' id='${day}3' placeholder='المادة'></td>
+
+<td><input class='schedule-input' id='${day}4' placeholder='المادة'></td>
+
+<td><input class='schedule-input' id='${day}5' placeholder='المادة'></td>
+
+<td><input class='schedule-input' id='${day}6' placeholder='المادة'></td>
+
+</tr>`;
+});
+
+setTimeout(()=>{
+
+document.getElementById('scheduleInputs').innerHTML=html;
+
+loadSavedSchedule();
+
+},100)
+
+}
+function loadSavedSchedule(){
+
+let grade=document.getElementById('tableGrade').value;
+
+let schedules=JSON.parse(localStorage.getItem('schedules'))||{};
+
+let table=schedules[grade];
+
+if(!table)return;
+
+schoolDays.forEach(day=>{
+
+for(let i=1;i<=6;i++){
+
+let input=document.getElementById(`${day}${i}`);
+
+if(input){
+
+input.value=table[day][i-1]||'';
+
+}
+
+}
+
+})
+
+}
+function saveSchedule(){let grade=document.getElementById('tableGrade').value;let schedules=JSON.parse(localStorage.getItem('schedules'))||{};schedules[grade]={};schoolDays.forEach(day=>{schedules[grade][day]=[];for(let i=1;i<=6;i++){schedules[grade][day].push(document.getElementById(`${day}${i}`).value)}});localStorage.setItem('schedules',JSON.stringify(schedules));showToast('✅ تم حفظ الجدول')}
+function clearSchedule(){
+
+if(!confirm('هل تريد مسح الجدول؟')) return;
+
+schoolDays.forEach(day=>{
+
+for(let i=1;i<=6;i++){
+
+let input=document.getElementById(`${day}${i}`);
+
+if(input){
+
+input.value='';
+
+}
+
+}
+
+})
+
+showToast('✅ تم مسح الجدول');
+
+}
+function copySchedule(){
+
+let fromGrade=prompt('اكتب اسم الصف المراد نسخ جدوله');
+
+if(!fromGrade) return;
+
+let schedules=JSON.parse(localStorage.getItem('schedules'))||{};
+
+if(!schedules[fromGrade]){
+
+showToast('❌ هذا الصف لا يحتوي على جدول','error');
+
+return;
+
+}
+
+schoolDays.forEach(day=>{
+
+for(let i=1;i<=6;i++){
+
+let input=document.getElementById(`${day}${i}`);
+
+if(input){
+
+input.value=schedules[fromGrade][day][i-1]||'';
+
+}
+
+}
+
+})
+
+showToast('✅ تم نسخ الجدول');
+
+}
+
+document.addEventListener('change',(e)=>{
+
+if(e.target.id==='tableGrade'){
+
+loadSavedSchedule();
+
+}
+}) 
+function changeAdminData(){let admin=JSON.parse(localStorage.getItem('adminData'));let newName=prompt('اسم الأدمن',admin.name);if(newName===null)return;let newPass=prompt('كلمة السر الجديدة',admin.password);if(newPass.length<6){showToast('❌ كلمة السر ضعيفة','error');return;}admin.name=newName;admin.password=newPass;localStorage.setItem('adminData',JSON.stringify(admin));showToast('✅ تم تغيير بيانات الأدمن')}
+function exportStudents(){let students=JSON.parse(localStorage.getItem('students'))||[];let dataStr='data:text/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(students,null,2));let dl=document.createElement('a');dl.href=dataStr;dl.download='students.json';dl.click();showToast('✅ تم التصدير')}
+function saveBackup(){let data={students:JSON.parse(localStorage.getItem('students')||'[]'),schedules:JSON.parse(localStorage.getItem('schedules')||'{}'),adminData:JSON.parse(localStorage.getItem('adminData')||'{}')};let dataStr='data:text/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(data,null,2));let dl=document.createElement('a');dl.href=dataStr;dl.download='backup.json';dl.click();showToast('✅ تم حفظ النسخة الاحتياطية')}
+function restoreBackup(){let file=document.getElementById('backupFile').files[0];if(!file)return;let reader=new FileReader();reader.onload=function(e){let data=JSON.parse(e.target.result);localStorage.setItem('students',JSON.stringify(data.students||[]));localStorage.setItem('schedules',JSON.stringify(data.schedules||{}));localStorage.setItem('adminData',JSON.stringify(data.adminData||{}));showToast('✅ تم الاسترجاع');showAdminPanel()};reader.readAsText(file)}
+function printResult(){window.print()}
+function logout(){document.getElementById('result').innerHTML=''}
+function changeStudentPassword(){
+
+if(!currentStudent){
+
+showToast('❌ لا يوجد طالب مسجل','error');
+
+return;
+
+}
+
+let oldPass=prompt('اكتب كلمة السر الحالية');
+
+if(oldPass!==currentStudent.password){
+
+showToast('❌ كلمة السر الحالية غير صحيحة','error');
+
+return;
+
+}
+
+let newPass=prompt('اكتب كلمة السر الجديدة (6 أرقام)');
+
+if(!newPass || newPass.length!==6 || isNaN(newPass)){
+
+showToast('❌ كلمة السر يجب أن تكون 6 أرقام','error');
+
+return;
+
+}
+
+let confirmPass=prompt('تأكيد كلمة السر الجديدة');
+
+if(newPass!==confirmPass){
+
+showToast('❌ كلمتا السر غير متطابقتين','error');
+
+return;
+
+}
+
+let students=JSON.parse(localStorage.getItem('students'))||[];
+
+students=students.map(s=>{
+
+if(s.id===currentStudent.id){
+
+s.password=newPass;
+
+currentStudent.password=newPass;
+
+}
+
+return s;
+
+});
+
+localStorage.setItem('students',JSON.stringify(students));
+
+showToast('✅ تم تغيير كلمة السر بنجاح');
+
+}
+setInterval(()=>{localStorage.setItem('students',localStorage.getItem('students'))},5000)
+
+function loadSavedSchedule(){
+    let grade=document.getElementById('tableGrade');
+    if(!grade) return;
+
+    let schedules=JSON.parse(localStorage.getItem('schedules'))||{};
+    let table=schedules[grade.value];
+
+    if(!table) return;
+
+    schoolDays.forEach(day=>{
+        for(let i=1;i<=6;i++){
+            let input=document.getElementById(`${day}${i}`);
+            if(input){
+                input.value = table[day]?.[i-1] || '';
+            }
+        }
+    });
+}
+function changeSchoolName(){
+
+let name=prompt('اكتب اسم المدرسة');
+
+if(!name)return;
+
+localStorage.setItem('schoolName',name);
+
+let title=document.getElementById('schoolName');
+
+title.innerText=name;
+
+/* إظهار الاسم */
+
+title.style.display='block';
+
+showToast('✅ تم تغيير اسم المدرسة');
+
+}
+
+function toggleInbox(){
+
+let inbox=document.getElementById('adminInbox')
+
+if(!inbox) return;
+
+/* إظهار وإخفاء */
+
+if(
+inbox.style.display==='none' ||
+inbox.style.display===''
+){
+
+inbox.style.display='block';
+
+loadAdminInbox();
+
+}else{
+
+inbox.style.display='none';
+
+}
+
+}
+function clearInbox(){
+
+if(!confirm('هل تريد مسح جميع الرسائل؟')) return;
+
+localStorage.removeItem('adminInbox');
+
+let box=document.getElementById('adminInboxBox');
+
+if(box){
+
+box.innerHTML=`
+<div class='info-box'>
+تم مسح جميع الرسائل
+</div>
+`;
+
+}
+
+showToast('✅ تم مسح صندوق الوارد');
+
+}
+function removeSchoolLogo(){
+
+if(!confirm('هل تريد حذف شعار المدرسة؟')) return;
+
+/* حذف الشعار من التخزين */
+
+localStorage.removeItem('schoolLogo');
+
+/* رجوع الشعار الافتراضي */
+
+document.getElementById('schoolLogo').src =
+'https://cdn-icons-png.flaticon.com/512/3135/3135755.png';
+
+showToast('✅ تم حذف شعار المدرسة');
+
+}
+
+function removeSchoolName(){
+
+if(!confirm('هل تريد حذف اسم المدرسة؟')) return;
+
+/* حذف الاسم */
+
+localStorage.removeItem('schoolName');
+
+/* إخفاء الاسم */
+
+let title=document.getElementById('schoolName');
+
+title.innerText='';
+
+title.style.display='none';
+
+showToast('✅ تم حذف اسم المدرسة');
+
+}
+function sendQuestionToAdmin(){
+
+let q=document.getElementById('studentQuestion').value.trim();
+
+let result=document.getElementById('studentQuestionResult');
+
+if(!q){
+
+showToast('❌ اكتب الاستفسار','error');
+
+return;
+
+}
+
+let inbox=JSON.parse(
+localStorage.getItem('adminInbox')
+)||[];
+
+inbox.push({
+
+id:Date.now(),
+
+student:currentStudent.name,
+
+message:q,
+
+reply:'',
+
+date:new Date().toLocaleString()
+
+});
+
+localStorage.setItem(
+'adminInbox',
+JSON.stringify(inbox)
+);
+
+result.innerHTML=`
+✅ تم إرسال الاستفسار للإدارة بنجاح
+`;
+
+document.getElementById('studentQuestion').value='';
+
+showToast('✅ تم إرسال الاستفسار');
+
+}
+
+function loadAdminInbox(){
+
+let inboxBox=document.getElementById('adminInbox');
+
+if(!inboxBox) return;
+
+/* جلب الرسائل */
+
+let inbox=JSON.parse(
+localStorage.getItem('adminInbox')
+)||[];
+
+/* لو لا توجد رسائل */
+
+if(inbox.length===0){
+
+inboxBox.innerHTML=`
+<div class='info-box'>
+لا توجد رسائل
+</div>
+`;
+
+return;
+
+}
+
+let html='';
+
+/* عرض الرسائل */
+
+inbox.reverse().forEach(msg=>{
+
+html+=`
+
+<div class='info-box'>
+
+👤 الطالب:
+${msg.student}
+
+<hr>
+
+📩 الاستفسار:
+<br>
+${msg.message}
+
+<hr>
+
+🕒 ${msg.date}
+
+<hr>
+
+<textarea
+id='reply${msg.id}'
+placeholder='اكتب الرد هنا'
+>${msg.reply || ''}</textarea>
+
+<button
+onclick='sendReply(${msg.id})'
+class='admin'
+>
+📨 إرسال الرد
+</button>
+
+</div>
+
+`;
+
+});
+
+/* هنا برا الـ forEach */
+
+inboxBox.innerHTML=html;
+
+} /* هنا قفلة الدالة */
+
+function sendReply(id){
+
+let inbox=JSON.parse(
+localStorage.getItem('adminInbox')
+)||[];
+
+let replyInput=document.getElementById(
+`reply${id}`
+);
+
+if(!replyInput) return;
+
+let reply=replyInput.value.trim();
+
+if(!reply){
+
+showToast('❌ اكتب الرد','error');
+
+return;
+
+}
+
+inbox=inbox.map(msg=>{
+
+if(msg.id===id){
+
+msg.reply=reply;
+
+}
+
+return msg;
+
+});
+
+localStorage.setItem(
+'adminInbox',
+JSON.stringify(inbox)
+);
+
+showToast('✅ تم إرسال الرد');
+
+loadAdminInbox();
+
+}
+function loadStudentReplies(){
+
+if(!currentStudent) return '';
+
+let inbox=JSON.parse(
+localStorage.getItem('adminInbox')
+)||[];
+
+let replies=inbox.filter(msg=>
+
+msg.student===currentStudent.name
+
+&&
+
+msg.reply
+
+);
+
+if(replies.length===0){
+
+return `
+<div class='card'>
+<div class='section-title'>
+📬 ردود الإدارة
+</div>
+
+<div class='info-box'>
+لا توجد ردود حتى الآن
+</div>
+</div>
+`;
+
+}
+
+let html=`
+<div class='card'>
+
+<div class='section-title'>
+📬 ردود الإدارة
+</div>
+`;
+
+replies.reverse().forEach(msg=>{
+
+html+=`
+
+<div class='info-box'>
+
+📩 استفسارك:
+<br>
+${msg.message}
+
+<hr>
+
+✅ رد الإدارة:
+<br>
+${msg.reply}
+
+</div>
+
+`;
+
+});
+
+html+=`</div>`;
+
+return html;
+
+}
+</script>
+</body>
+</html>
+
+
